@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>MechanicalHub | Marmara Makine Tam Arşiv</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --m-blue: #003366; --m-gold: #c5a059; --bg: #f4f7f6; }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); margin: 0; color: #333; }
+        header { background: var(--m-blue); color: white; padding: 50px 20px; text-align: center; border-bottom: 6px solid var(--m-gold); }
+        
+        .filter-section { background: white; padding: 25px; max-width: 1000px; margin: -35px auto 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: flex; gap: 15px; justify-content: center; position: sticky; top: 15px; z-index: 1000; }
+        select { padding: 12px; border-radius: 8px; border: 2px solid #ddd; min-width: 250px; font-size: 15px; outline: none; }
+
+        .container { max-width: 1200px; margin: auto; padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 25px; }
+        .course-card { background: white; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); overflow: hidden; border-top: 5px solid var(--m-blue); display: flex; flex-direction: column; transition: 0.3s; }
+        .course-card:hover { transform: translateY(-5px); }
+        
+        .card-header { padding: 20px; background: #fafafa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .card-header h3 { margin: 0; color: var(--m-blue); font-size: 1.1rem; }
+        .badge { background: var(--m-gold); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; }
+
+        .study-box { padding: 20px; font-size: 0.85rem; line-height: 1.6; color: #555; background: #fffdf9; flex-grow: 1; white-space: pre-line; }
+        
+        .footer-btns { padding: 20px; display: flex; gap: 10px; border-top: 1px solid #eee; }
+        .btn { flex: 1; padding: 10px; border-radius: 6px; text-align: center; font-weight: 600; font-size: 0.8rem; text-decoration: none; cursor: pointer; border: none; }
+        .btn-pdf { background: #e74c3c; color: white; }
+        .btn-vid { background: #3498db; color: white; }
+
+        footer { text-align: center; padding: 50px; color: #999; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Marmara Makine Dijital Müfredat</h1>
+    <p>19 Dersin Tamamı: Akademik Notlar ve Video Arşivleri</p>
+</header>
+
+<div class="filter-section">
+    <select id="classSelect" onchange="filterCourses()">
+        <option value="all">Tüm Sınıflar</option>
+        <option value="1">1. Sınıf</option>
+        <option value="2">2. Sınıf</option>
+        <option value="3">3. Sınıf</option>
+        <option value="4">4. Sınıf</option>
+    </select>
+</div>
+
+<div class="container" id="courseContainer">
+    </div>
+
+<script>
+const { jsPDF } = window.jspdf;
+
+const fullMufredat = [
+    // 1. SINIF
+    { c: 1, name: "Calculus I & II", vid: "https://www.youtube.com/results?search_query=calculus+1+2+full+course", note: "• Fonksiyonlar, Limit ve Süreklilik\n• Türev Uygulamaları (Max/Min)\n• İntegral Teknikleri (Alan/Hacim)\n• Kutupsal Koordinatlar ve Seriler" },
+    { c: 1, name: "Physics I & II", vid: "https://www.youtube.com/results?search_query=fizik+1+2+üniversite", note: "• Vektörler ve Kinematik\n• Newton Kanunları ve Enerji\n• Elektriksel Alan ve Potansiyel\n• Manyetizma ve Maxwell Denklemleri" },
+    { c: 1, name: "General Chemistry", vid: "https://www.youtube.com/results?search_query=genel+kimya+dersleri", note: "• Atomik Teori ve Periyodik Tablo\n• Kimyasal Bağlar ve Geometri\n• Gazlar ve Termokimya\n• Çözeltiler ve Denge" },
+    { c: 1, name: "Statics", vid: "https://www.youtube.com/results?search_query=statik+dersleri", note: "• Vektörel Kuvvet Sistemleri\n• Rijit Cisimlerin Dengesi\n• Kafes ve Çerçeve Sistemleri\n• Ağırlık Merkezi ve Sürtünme" },
+    { c: 1, name: "Technical Drawing", vid: "https://www.youtube.com/results?search_query=teknik+resim+dersleri", note: "• Geometrik Çizimler ve Ölçek\n• İzdüşüm ve Görünüş Çıkarma\n• Kesit Alma ve Ölçülendirme\n• CAD (AutoCAD/Solidworks) Giriş" },
+
+    // 2. SINIF
+    { c: 2, name: "Strength of Materials I & II", vid: "https://www.youtube.com/results?search_query=mukavemet+dersleri", note: "• Gerilme-Şekil Değiştirme\n• Mohr Çemberi ve Asal Gerilmeler\n• Kirişlerde Eğilme ve Kesme\n• Burulma ve Kolonlarda Burkulma" },
+    { c: 2, name: "Thermodynamics I & II", vid: "https://www.youtube.com/results?search_query=termodinamik+dersleri", note: "• Saf Madde Özellikleri (Tablolar)\n• Enerji ve Entropi Dengesi\n• Rankine, Otto ve Diesel Çevrimleri\n• Gaz Türbinleri ve Soğutma" },
+    { c: 2, name: "Dynamics", vid: "https://www.youtube.com/results?search_query=dinamik+dersleri", note: "• Parçacık Kinematiği (Hız/İvme)\n• İş ve Enerji Prensipleri\n• İtme ve Momentum\n• Rijit Cisimlerin Kinetiği" },
+    { c: 2, name: "Materials Science", vid: "https://www.youtube.com/results?search_query=malzeme+bilimi+dersleri", note: "• Kristal Yapılar ve Kusurlar\n• Faz Diyagramları (Demir-Karbon)\n• Isıl İşlemler ve Sertleştirme\n• Malzemelerin Mekanik Testleri" },
+    { c: 2, name: "Differential Equations", vid: "https://www.youtube.com/results?search_query=diferansiyel+denklemler+dersleri", note: "• 1. Mertebe Denklemler\n• Yüksek Mertebeli Lineer Denklemler\n• Laplace Dönüşümleri\n• Seri Çözümleri" },
+    { c: 2, name: "Manufacturing Processes", vid: "https://www.youtube.com/results?search_query=imal+usulleri+dersleri", note: "• Döküm ve Kaynak Teknolojileri\n• Talaşlı İmalat (Torna/Freze)\n• Metal Şekillendirme (Dövme/Hadde)\n• Ölçme ve Kalite Kontrol" },
+
+    // 3. SINIF
+    { c: 3, name: "Fluid Mechanics", vid: "https://www.youtube.com/results?search_query=akışkanlar+mekaniği+dersleri", note: "• Akışkan Statiği ve Manometreler\n• Bernoulli ve Enerji Denklemi\n• Borularda Viskoz Akış (Moody)\n• Sınır Tabaka ve Sürükleme" },
+    { c: 3, name: "Heat Transfer", vid: "https://www.youtube.com/results?search_query=ısı+transferi+dersleri", note: "• Kondüksiyon (İletim) Analizi\n• Konveksiyon (Nusselt/Reynolds)\n• Radyasyon ve Isı Değiştiriciler\n• Zamana Bağlı Isı Geçişi" },
+    { c: 3, name: "Machine Elements I & II", vid: "https://www.youtube.com/results?search_query=makine+elemanları+dersleri", note: "• Millerin Tasarımı ve Yorulma\n• Dişli Çark Mekanizmaları\n• Rulmanlı Yatak Seçimi\n• Bağlantı Elemanları (Cıvata/Kaynak)" },
+    { c: 3, name: "Theory of Machines", vid: "https://www.youtube.com/results?search_query=mekanizma+tekniği+dersleri", note: "• Mekanizmaların Kinematiği\n• Hız ve İvme Analizi\n• Kam Tasarımı ve Dişli Trenleri\n• Dinamik Kuvvet Analizi" },
+    { c: 3, name: "Automatic Control", vid: "https://www.youtube.com/results?search_query=kontrol+sistemleri+dersleri", note: "• Laplace ve Transfer Fonksiyonları\n• Blok Diyagramları ve Sinyal Akışı\n• Zaman ve Frekans Cevabı\n• PID Kontrolör Tasarımı" },
+
+    // 4. SINIF
+    { c: 4, name: "HVAC Systems", vid: "https://www.youtube.com/results?search_query=iklimlendirme+hvac+dersleri", note: "• Psikrometri ve Konfor Şartları\n• Isı Kaybı ve Kazancı Hesabı\n• Havalandırma ve Kanal Tasarımı\n• Soğutma Sistemleri Bileşenleri" },
+    { c: 4, name: "Internal Combustion Engines", vid: "https://www.youtube.com/results?search_query=içten+yanmalı+motorlar", note: "• Motor Çevrimleri ve Verim\n• Yanma ve Emisyon Kontrolü\n• Yakıt Sistemleri ve Performans\n• Alternatif Yakıtlar" },
+    { c: 4, name: "Engineering Economy", vid: "https://www.youtube.com/results?search_query=mühendislik+ekonomisi+dersleri", note: "• Paranın Zaman Değeri (P, F, A)\n• NPV ve IRR Analizleri\n• Amortisman ve Vergi Hesapları\n• Maliyet Tahmini ve Karşılaştırma" }
+];
+
+function render(filter = 'all') {
+    const container = document.getElementById('courseContainer');
+    container.innerHTML = "";
+    
+    fullMufredat.forEach(d => {
+        if(filter === 'all' || d.c == filter) {
+            const card = document.createElement('div');
+            card.className = 'course-card';
+            card.innerHTML = `
+                <div class="card-header">
+                    <h3>${d.name}</h3>
+                    <span class="badge">${d.c}. Sınıf</span>
+                </div>
+                <div class="study-box"><strong>📖 Ders Özeti:</strong>\n${d.note}</div>
+                <div class="footer-btns">
+                    <button class="btn btn-pdf" onclick="savePDF('${d.name}', \`${d.note}\`)">PDF İndir</button>
+                    <a href="${d.vid}" target="_blank" class="btn btn-vid">Ders Videoları</a>
+                </div>
+            `;
+            container.appendChild(card);
+        }
+    });
+}
+
+function savePDF(title, content) {
+    const doc = new jsPDF();
+    doc.setFillColor(0, 51, 102);
+    doc.rect(0, 0, 210, 30, 'F');
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(255, 255, 255);
+    doc.text("MARMARA MAKINE ARSIVI", 105, 15, {align: "center"});
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(16);
+    doc.text(title, 20, 45);
+    doc.setFontSize(11);
+    doc.text(doc.splitTextToSize(content, 170), 20, 60);
+    doc.save(title + ".pdf");
+}
+
+function filterCourses() {
+    render(document.getElementById('classSelect').value);
+}
+
+render();
+</script>
+
+</body>
+</html>
